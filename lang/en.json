@@ -1,0 +1,31 @@
+{
+  "faster-rolling-by-default-5e": {
+    "settings": {
+      "faster-global": {
+        "name": "Skip Roll Dialogs (World Default)",
+        "hint": "Without Shift held, the roll configuration dialog will be skipped for all rolls."
+      },
+      "auto-roll-item": {
+        "name": "Automatically Roll Item Checks",
+        "hint": "Tool Checks and Attack Rolls will automatically roll when the item is used."
+      },
+      "auto-roll-damage": {
+        "name": "Automatically Roll Item Damage",
+        "hint": "Damage rolls will automatically roll when the item is used. If there is an attack roll and it is a critical, it will make the damage roll a critical."
+      },
+      "auto-roll-table": {
+        "name": "Automatically Roll Item Rollable Table",
+        "hint": "(Requires Items With Rollable Tables DnD5e Module)"
+      },
+      "faster-local": {
+        "name": "Skip Roll Dialogs (Local Override)",
+        "hint": "Without Shift held, the roll configuration dialog will be skipped for all rolls.",
+        "options": {
+          "useWorld": "Use World Default",
+          "overrideYes": "Skip",
+          "overrideNo": "Don't Skip"
+        }
+      }
+    }
+  }
+}
