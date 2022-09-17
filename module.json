@@ -18,7 +18,10 @@
   "bugs": "https://github.com/ElfFriend-DnD/foundryvtt-faster-rolling-by-default-5e/issues",
   "changelog": "https://github.com/ElfFriend-DnD/foundryvtt-faster-rolling-by-default-5e/releases",
   "flags": {
-    "allowBugReporter": true
+    "allowBugReporter": true,
+    "fvttdevleague": {
+        "package-jam": 2022
+    }
   },
   "version": "1.0.0",
   "compatibility": {
