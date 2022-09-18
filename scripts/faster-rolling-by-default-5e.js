@@ -153,6 +153,12 @@ class FasterRollingByDefault5e {
    * @param {D20RollConfiguration} config - roll dialog config
    */
   static skipD20RollDialog(config) {
+
+    // do nothing if this roll is already configured for advantage or disadvantage
+    if (config.advantage || config.disadvantage) {
+      return;
+    }
+
     if (this._getShouldBeFasterWithOverride()) {
       const newFFValue = this._determineShouldFFD20(config);
       FasterRollingByDefault5e.log(false, 'skipping?', config, newFFValue);
