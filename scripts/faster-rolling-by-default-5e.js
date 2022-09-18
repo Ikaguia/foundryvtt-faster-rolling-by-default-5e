@@ -26,18 +26,22 @@ class FasterRollingByDefault5e {
     fasterGlobal: {
       settingName: 'faster-global',
       defaultValue: true,
+      configValue: true,
     },
     autoRollItem: {
       settingName: 'auto-roll-item',
       defaultValue: true,
+      configValue: true,
     },
     autoRollDamage: {
       settingName: 'auto-roll-damage',
       defaultValue: false,
+      configValue: true,
     },
     autoRollTable: {
       settingName: 'auto-roll-table',
       defaultValue: false,
+      configValue: game.modules.get('items-with-rolltables-5e')?.active,
     },
   }
 
@@ -60,11 +64,11 @@ class FasterRollingByDefault5e {
   }
 
   static registerSettings() {
-    Object.values(this.WORLD_SETTINGS).forEach(({ settingName, defaultValue }) => {
+    Object.values(this.WORLD_SETTINGS).forEach(({ settingName, defaultValue, configValue }) => {
       game.settings.register(this.MODULE_ID, settingName, {
         name: `${this.MODULE_ID}.settings.${settingName}.name`,
         hint: `${this.MODULE_ID}.settings.${settingName}.hint`,
-        config: true,
+        config: configValue,
         scope: 'world',
         default: defaultValue,
         type: Boolean,
