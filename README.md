@@ -16,10 +16,12 @@ This module is heavily inspired by [Minimal Rolling Enhancements for D&D5e (MRE)
 ## Configurability
 
 ### Roll Configuration Dialog Behavior
-The core 5e system behavior is to always prompt the user when making a dice roll which might have a situational bonus, advantage, or disadvantage. It allows skipping this dialog by holding Shift when clicking on a roll button.
 
-<details>
-<summary>Flowchart of Core Behavior</summary> 
+The main difference someone may notice with this module is that they are prompted less often to configure a roll being made.
+
+#### Core Behavior -- Skip Roll Dialogs: False
+
+The core 5e system behavior is to always prompt the user when making a dice roll which might have a situational bonus, advantage, or disadvantage. It allows skipping this dialog by holding Shift when clicking on a roll button.
 
 ```mermaid
   flowchart LR;
@@ -36,16 +38,13 @@ The core 5e system behavior is to always prompt the user when making a dice roll
       style D fill:#2F932C,stroke:#000,stroke-width:1px,color:#fff
       style G fill:#2F932C,stroke:#000,stroke-width:1px,color:#fff
 ```
-
 User flow with no Shift Key held is Highlighted.
-</details>
+
+#### Module Behavior -- Skip Roll Dialogs: True
 
 This module allows GMs to configure the opposite behavior as the default: Do Not prompt the user when making a dice roll _unless_ they are holding Shift when clicking the roll button.
 
 Players have the ability to opt out of this setting and set their own desired behavior.
-
-<details>
-<summary>Flowchart of Module Behavior</summary> 
 
 ```mermaid
   flowchart LR;
@@ -61,9 +60,7 @@ Players have the ability to opt out of this setting and set their own desired be
       style D fill:#2F932C,stroke:#000,stroke-width:1px,color:#fff
       style G fill:#2F932C,stroke:#000,stroke-width:1px,color:#fff
 ```
-
 User flow with no Shift Key held is Highlighted.
-</details>
 
 ### Item Usage Behavior
 
