@@ -72,6 +72,7 @@ Allows GMs to configure whether Items automatically roll any or all of the follo
 Super Charged by:
 - [Retroactive Advantage D&D5e](https://github.com/ElfFriend-DnD/foundryvtt-retroactive-advantage-5e)
 - [Attack Roll Check D&D5e](https://github.com/ElfFriend-DnD/foundryvtt-attack-roll-check-5e)
+- [Items With Rollable Tables DnD5e](https://github.com/ElfFriend-DnD/foundryvtt-items-with-rolltables-5e)
 
 Compatible with:
 - Core dnd5e roller
