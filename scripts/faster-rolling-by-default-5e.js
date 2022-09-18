@@ -90,7 +90,13 @@ class FasterRollingByDefault5e {
    * Copied from core system.
    * @return `true` if `event.shiftKey` is not pressed, instead of the other way around.
    */
-   static _determineShouldFF({ event, advantage = false, disadvantage = false, fastForward = false } = {}) {
+  static _determineShouldFF({ event, advantage = false, disadvantage = false, fastForward = false } = {}) {
+    FasterRollingByDefault5e.log(false, '_determineShouldFF', {
+      fastForward,
+      event,
+      shiftKey: event.shiftKey,
+      or: (!event.shiftKey || event.altKey || event.ctrlKey || event.metaKey)
+    });
     return fastForward || (event && (!event.shiftKey || event.altKey || event.ctrlKey || event.metaKey));
   }
 
@@ -99,8 +105,8 @@ class FasterRollingByDefault5e {
    * @returns true if the roll should be faster by default
    */
   static _getShouldBeFasterWithOverride() {
-    const fasterGlobal = game.settings.get(this.MODULE_ID, this.SETTINGS.fasterGlobal);
-    const fasterLocal = game.settings.get(this.MODULE_ID, this.SETTINGS.fasterLocal);
+    const fasterGlobal = game.settings.get(this.MODULE_ID, this.SETTINGS.fasterGlobal.settingName);
+    const fasterLocal = game.settings.get(this.MODULE_ID, this.SETTINGS.fasterLocal.settingName);
 
     switch (fasterLocal) {
       case 'overrideYes':
@@ -119,7 +125,14 @@ class FasterRollingByDefault5e {
    */
   static skipRollDialog(config) {
     if (this._getShouldBeFasterWithOverride()) {
-      config.fastForward = this._determineShouldFF(config);
+      const newFFValue = this._determineShouldFF(config);
+      FasterRollingByDefault5e.log(false, 'skipping?', config, newFFValue);
+
+      config.fastForward = newFFValue;
+
+      FasterRollingByDefault5e.log(false, 'Mutating Event shiftKey from', config.event.shiftKey, 'to', newFFValue);
+      // set the `event` shiftKey to be the same as our new fast forward value
+      config.event.shiftKey = newFFValue;
     }
 
     return;
@@ -142,7 +155,7 @@ class FasterRollingByDefault5eActor {
   /**
    * Initialize all hooks related to Actors
    */
-  static init() {
+  static init = () => {
     this.ROLL_DIALOG_HOOKS.forEach((hookName) => {
       Hooks.on(hookName, (document, config) => FasterRollingByDefault5e.skipRollDialog(config));
     });
@@ -150,11 +163,59 @@ class FasterRollingByDefault5eActor {
 }
 
 class FasterRollingByDefault5eItem {
+
+  /**
+   * A 'fake event' we keep track of to provide to `handleUseItem`'s roll calls.
+   * Populated during `handlePreUseItem` because later than this the browser's `event` becomes
+   * a MessageEvent instead of the desired PointerEvent.
+   */
+  static FAKE_EVENT = {
+    altKey: false,
+    shiftKey: false,
+    ctrlKey: false,
+    metaKey: false,
+  };
+
   static ROLL_DIALOG_HOOKS = [
     'dnd5e.preRollAttack',
     'dnd5e.preRollDamage',
     'dnd5e.preRollToolCheck',
   ];
+
+  static _resetFakeEvent() {
+    this.FAKE_EVENT = {
+      altKey: false,
+      shiftKey: false,
+      ctrlKey: false,
+      metaKey: false,
+    };
+  }
+
+  /**
+   * Work around the `useItem` method not getting `event` when it's called from most places.
+   * // TODO: Submit PR to core system to provide `event` on `item.use` by default
+   */
+  static preserveFakeEvent = () => {
+    try {
+      const autoRollItem = game.settings.get(FasterRollingByDefault5e.MODULE_ID, FasterRollingByDefault5e.SETTINGS.autoRollItem.settingName);
+      if (!autoRollItem) {
+        return;
+      }
+      
+      /** Deprecated Global Browser "event" */
+      // Explicitly set this because these are wierd getters that `mergeObject` was messing up with
+      this.FAKE_EVENT = {
+        altKey: event.altKey,
+        shiftKey: event.shiftKey,
+        ctrlKey: event.ctrlKey,
+        metaKey: event.metaKey,
+      }
+      
+      FasterRollingByDefault5e.log(false, 'FAKE_EVENT stored as', this.FAKE_EVENT);
+    } catch (e) {
+      FasterRollingByDefault5e.log(false, 'A problem happened when trying to preserve the global event.')
+    }
+  }
 
   /**
    * Handle Item Use auto-rolls
@@ -163,12 +224,15 @@ class FasterRollingByDefault5eItem {
    * 2. If `autoRollDamage` is enabled, roll damage passing in if it was a critical
    * 3. If `autoRollTable` is enabled and the module is active, draw a result from the table
    */
-  static async onUseItem(item) {
-    try {
+  static handleUseItem = async (item) => {
+    const _event = foundry.utils.deepClone(this.FAKE_EVENT);
+    this._resetFakeEvent();
 
-      const autoRollItem = game.settings.get(FasterRollingByDefault5e.MODULE_ID, FasterRollingByDefault5e.SETTINGS.autoRollItem);
-      const autoRollDamage = game.settings.get(FasterRollingByDefault5e.MODULE_ID, FasterRollingByDefault5e.SETTINGS.autoRollDamage);
-      const autoRollTable = game.settings.get(FasterRollingByDefault5e.MODULE_ID, FasterRollingByDefault5e.SETTINGS.autoRollTable);
+    FasterRollingByDefault5e.log(false, 'handleUseItem', _event);
+    try {
+      const autoRollItem = game.settings.get(FasterRollingByDefault5e.MODULE_ID, FasterRollingByDefault5e.SETTINGS.autoRollItem.settingName);
+      const autoRollDamage = game.settings.get(FasterRollingByDefault5e.MODULE_ID, FasterRollingByDefault5e.SETTINGS.autoRollDamage.settingName);
+      const autoRollTable = game.settings.get(FasterRollingByDefault5e.MODULE_ID, FasterRollingByDefault5e.SETTINGS.autoRollTable.settingName);
 
       if (!autoRollItem && !autoRollDamage && !autoRollTable) {
         return;
@@ -177,19 +241,24 @@ class FasterRollingByDefault5eItem {
       /** MUTATED based on attackRoll results */
       let critical = false;
 
-      /** Deprecated Global Browser "event" */
-      // TODO: Submit PR to core system to provide `event` on `item.use` by default
-      const _event = foundry.utils.deepClonse(event);
 
       /** Roll Attack or Tool Check, using the `_event` */
       if (autoRollItem) {
         if (item.type === 'tool') {
+          FasterRollingByDefault5e.log(false, 'Tool Detected, rolling tool check', {
+            event: _event,
+          });
+
           return item.rollToolCheck({
             event: _event,
           });
         }
 
         if (item.hasAttack) {
+          FasterRollingByDefault5e.log(false, 'Attack Detected, rolling attack roll', {
+            event: _event,
+          });
+
           const result = await item.rollAttack({
             event: _event
           });
@@ -215,27 +284,36 @@ class FasterRollingByDefault5eItem {
       const tableUuid = foundry.utils.getProperty(item, 'flags.items-with-rolltables-5e.rollable-table-uuid');
       if (autoRollTable && tableUuid && game.modules.get('items-with-rolltables-5e')?.active) {
         const rollableTable = await fromUuid(tableUuid);
-    
+
         if (!rollableTable) {
           ui.notifications.error(game.i18n.localize('items-with-rolltables-5e.missing-table-error'))
           return;
         }
-    
+
         rollableTable.draw();
       }
     } catch (e) {
-      FasterRollingByDefault5e.log(e);
+      console.error(FasterRollingByDefault5e.MODULE_TITLE, '|', e);
     }
   }
 
   /**
    * Initialize all hooks related to Items
    */
-  static init() {
-    Hooks.on('onUseItem', this.onUseItem)
+  static init = () => {
+    Hooks.on('dnd5e.preUseItem', this.preserveFakeEvent);
+
+    Hooks.on('dnd5e.useItem', this.handleUseItem);
 
     this.ROLL_DIALOG_HOOKS.forEach((hookName) => {
       Hooks.on(hookName, (document, config) => FasterRollingByDefault5e.skipRollDialog(config));
     });
   }
 }
+
+Hooks.on('init', () => {
+  FasterRollingByDefault5e.registerSettings();
+
+  FasterRollingByDefault5eActor.init();
+  FasterRollingByDefault5eItem.init();
+})
