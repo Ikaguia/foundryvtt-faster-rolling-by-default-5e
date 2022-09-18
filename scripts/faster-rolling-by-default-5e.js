@@ -22,7 +22,8 @@ class FasterRollingByDefault5e {
   }
 
 
-  static WORLD_SETTINGS = {
+  static get WORLD_SETTINGS() {
+    return {
     fasterGlobal: {
       settingName: 'faster-global',
       defaultValue: true,
@@ -44,8 +45,10 @@ class FasterRollingByDefault5e {
       configValue: game.modules.get('items-with-rolltables-5e')?.active,
     },
   }
+}
 
-  static OVERRIDE_SETTINGS = {
+  static get OVERRIDE_SETTINGS() {
+    return {
     fasterLocal: {
       settingName: 'faster-local',
       options: [
@@ -54,6 +57,7 @@ class FasterRollingByDefault5e {
         'overrideNo'
       ]
     }
+  }
   }
 
   static get SETTINGS() {
@@ -91,17 +95,38 @@ class FasterRollingByDefault5e {
   }
 
   /**
-   * Copied from core system.
+   * Adapted from core system.
    * @return `true` if `event.shiftKey` is not pressed, instead of the other way around.
    */
-  static _determineShouldFF({ event, advantage = false, disadvantage = false, fastForward = false } = {}) {
-    FasterRollingByDefault5e.log(false, '_determineShouldFF', {
+  static _determineShouldFFD20({ event, fastForward } = {}) {
+    FasterRollingByDefault5e.log(false, '_determineShouldFFD20', {
       fastForward,
       event,
-      shiftKey: event.shiftKey,
-      or: (!event.shiftKey || event.altKey || event.ctrlKey || event.metaKey)
+      shiftKey: event?.shiftKey,
+      or: (!event?.shiftKey || event?.altKey || event?.ctrlKey || event?.metaKey)
     });
-    return fastForward || (event && (!event.shiftKey || event.altKey || event.ctrlKey || event.metaKey));
+    
+    return fastForward || !event || (event && (!event.shiftKey || event.altKey || event.ctrlKey || event.metaKey));
+  }
+
+  /**
+   * Adapted from core system.
+   * Different from `_determineShouldFFD20` because `damageRoll` sets `fastForward` internally before we can intercept
+   * @return `true` if `event.shiftKey` is not pressed, instead of the other way around.
+   */
+  static _determineShouldFFDamage({ event, fastForward } = {}) {
+    FasterRollingByDefault5e.log(false, '_determineShouldFFDamage', {
+      event,
+      shiftKey: event?.shiftKey,
+      or: (!event?.shiftKey || event?.altKey || event?.ctrlKey || event?.metaKey)
+    });
+
+    // disregard fastForward if there is an event to use instead
+    if (event) {
+      return (!event.shiftKey || event.altKey || event.ctrlKey || event.metaKey);
+    }
+
+    return fastForward || !event || (event && (!event.shiftKey || event.altKey || event.ctrlKey || event.metaKey));
   }
 
   /**
@@ -125,18 +150,42 @@ class FasterRollingByDefault5e {
   /**
    * Utility to Skip a rollDialog for a d20
    * MUTATES `config`
-   * @param {D20RollConfiguration | DamageRollConfiguration} config - roll dialog config
+   * @param {D20RollConfiguration} config - roll dialog config
    */
-  static skipRollDialog(config) {
+  static skipD20RollDialog(config) {
     if (this._getShouldBeFasterWithOverride()) {
-      const newFFValue = this._determineShouldFF(config);
+      const newFFValue = this._determineShouldFFD20(config);
       FasterRollingByDefault5e.log(false, 'skipping?', config, newFFValue);
 
       config.fastForward = newFFValue;
 
-      FasterRollingByDefault5e.log(false, 'Mutating Event shiftKey from', config.event.shiftKey, 'to', newFFValue);
-      // set the `event` shiftKey to be the same as our new fast forward value
-      config.event.shiftKey = newFFValue;
+      if (config.event) {
+        FasterRollingByDefault5e.log(false, 'Mutating Event shiftKey from', config.event.shiftKey, 'to', newFFValue);
+        // set the `event` shiftKey to be the same as our new fast forward value
+        config.event.shiftKey = newFFValue;
+      }
+    }
+
+    return;
+  }
+
+  /**
+   * Utility to Skip a rollDialog for a damageRoll
+   * MUTATES `config`
+   * @param {DamageRollConfiguration} config - roll dialog config
+   */
+  static skipDamageRollDialog(config) {
+    if (this._getShouldBeFasterWithOverride()) {
+      const newFFValue = this._determineShouldFFDamage(config);
+      FasterRollingByDefault5e.log(false, 'skipping?', config, newFFValue);
+
+      config.fastForward = newFFValue;
+
+      if (config.event) {
+        FasterRollingByDefault5e.log(false, 'Mutating Event shiftKey from', config.event.shiftKey, 'to', newFFValue);
+        // set the `event` shiftKey to be the same as our new fast forward value
+        config.event.shiftKey = newFFValue;
+      }
     }
 
     return;
@@ -149,7 +198,7 @@ Hooks.once('devModeReady', ({ registerPackageDebugFlag }) => {
 
 
 class FasterRollingByDefault5eActor {
-  static ROLL_DIALOG_HOOKS = [
+  static D20_ROLL_DIALOG_HOOKS = [
     'dnd5e.preRollAbilityTest',
     'dnd5e.preRollSkill',
     'dnd5e.preRollAbilitySave',
@@ -160,8 +209,8 @@ class FasterRollingByDefault5eActor {
    * Initialize all hooks related to Actors
    */
   static init = () => {
-    this.ROLL_DIALOG_HOOKS.forEach((hookName) => {
-      Hooks.on(hookName, (document, config) => FasterRollingByDefault5e.skipRollDialog(config));
+    this.D20_ROLL_DIALOG_HOOKS.forEach((hookName) => {
+      Hooks.on(hookName, (document, config) => FasterRollingByDefault5e.skipD20RollDialog(config));
     });
   }
 }
@@ -180,11 +229,14 @@ class FasterRollingByDefault5eItem {
     metaKey: false,
   };
 
-  static ROLL_DIALOG_HOOKS = [
+  static D20_ROLL_DIALOG_HOOKS = [
     'dnd5e.preRollAttack',
-    'dnd5e.preRollDamage',
     'dnd5e.preRollToolCheck',
   ];
+
+  static DAMAGE_ROLL_DIALOG_HOOKS = [
+    'dnd5e.preRollDamage',
+  ]
 
   static _resetFakeEvent() {
     this.FAKE_EVENT = {
@@ -309,8 +361,12 @@ class FasterRollingByDefault5eItem {
 
     Hooks.on('dnd5e.useItem', this.handleUseItem);
 
-    this.ROLL_DIALOG_HOOKS.forEach((hookName) => {
-      Hooks.on(hookName, (document, config) => FasterRollingByDefault5e.skipRollDialog(config));
+    this.D20_ROLL_DIALOG_HOOKS.forEach((hookName) => {
+      Hooks.on(hookName, (document, config) => FasterRollingByDefault5e.skipD20RollDialog(config));
+    });
+    
+    this.DAMAGE_ROLL_DIALOG_HOOKS.forEach((hookName) => {
+      Hooks.on(hookName, (document, config) => FasterRollingByDefault5e.skipDamageRollDialog(config));
     });
   }
 }
