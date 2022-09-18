@@ -337,9 +337,16 @@ class FasterRollingByDefault5eItem {
 
       /** Roll Damage, include if the attack roll was a critical hit */
       if (autoRollDamage && item.hasDamage) {
-        item.rollDamage({
-          critical,
-        });
+        if (game.modules.get('rollgroups')?.active) {
+          item.rollDamageGroup?.({
+            rollgroup: 0,
+            critical,
+          });
+        } else {
+          item.rollDamage({
+            critical,
+          });
+        }
       }
 
       /** If the `items-with-rolltables-5e` module is active, try to roll the table from its flags */
