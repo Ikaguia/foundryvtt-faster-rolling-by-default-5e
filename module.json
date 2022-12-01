@@ -48,6 +48,12 @@
       "compatibility": {
         "minimum": "2.0.0"
       }
+    },{
+      "id": "sw5e",
+      "type": "system",
+      "compatibility": {
+        "minimum": "2.0.0"
+      }
     }]
   },
   "manifest": "https://github.com/ElfFriend-DnD/foundryvtt-faster-rolling-by-default-5e/releases/latest/download/module.json",

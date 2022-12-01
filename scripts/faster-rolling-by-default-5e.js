@@ -205,10 +205,10 @@ Hooks.once('devModeReady', ({ registerPackageDebugFlag }) => {
 
 class FasterRollingByDefault5eActor {
   static D20_ROLL_DIALOG_HOOKS = [
-    'dnd5e.preRollAbilityTest',
-    'dnd5e.preRollSkill',
-    'dnd5e.preRollAbilitySave',
-    'dnd5e.preRollDeathSave',
+    'preRollAbilityTest',
+    'preRollSkill',
+    'preRollAbilitySave',
+    'preRollDeathSave',
   ];
 
   /**
@@ -216,7 +216,7 @@ class FasterRollingByDefault5eActor {
    */
   static init = () => {
     this.D20_ROLL_DIALOG_HOOKS.forEach((hookName) => {
-      Hooks.on(hookName, (document, config) => FasterRollingByDefault5e.skipD20RollDialog(config));
+      Hooks.on(`${game.system.id}.${hookName}`, (document, config) => FasterRollingByDefault5e.skipD20RollDialog(config));
     });
   }
 }
@@ -236,12 +236,12 @@ class FasterRollingByDefault5eItem {
   };
 
   static D20_ROLL_DIALOG_HOOKS = [
-    'dnd5e.preRollAttack',
-    'dnd5e.preRollToolCheck',
+    'preRollAttack',
+    'preRollToolCheck',
   ];
 
   static DAMAGE_ROLL_DIALOG_HOOKS = [
-    'dnd5e.preRollDamage',
+    'preRollDamage',
   ]
 
   static _resetFakeEvent() {
@@ -370,16 +370,16 @@ class FasterRollingByDefault5eItem {
    * Initialize all hooks related to Items
    */
   static init = () => {
-    Hooks.on('dnd5e.preUseItem', this.preserveFakeEvent);
+    Hooks.on(`${game.system.id}.preUseItem`, this.preserveFakeEvent);
 
-    Hooks.on('dnd5e.useItem', this.handleUseItem);
+    Hooks.on(`${game.system.id}.useItem`, this.handleUseItem);
 
     this.D20_ROLL_DIALOG_HOOKS.forEach((hookName) => {
-      Hooks.on(hookName, (document, config) => FasterRollingByDefault5e.skipD20RollDialog(config));
+      Hooks.on(`${game.system.id}.${hookName}`, (document, config) => FasterRollingByDefault5e.skipD20RollDialog(config));
     });
     
     this.DAMAGE_ROLL_DIALOG_HOOKS.forEach((hookName) => {
-      Hooks.on(hookName, (document, config) => FasterRollingByDefault5e.skipDamageRollDialog(config));
+      Hooks.on(`${game.system.id}.${hookName}`, (document, config) => FasterRollingByDefault5e.skipDamageRollDialog(config));
     });
   }
 }
